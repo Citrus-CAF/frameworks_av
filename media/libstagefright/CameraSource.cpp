@@ -799,7 +799,14 @@ status_t CameraSource::start(MetaData *meta) {
 
     if (meta) {
         int64_t startTimeUs;
-        if (meta->findInt64(kKeyTime, &startTimeUs)) {
+
+        auto key = kKeyTime;
+        if (property_get_bool("persist.camera.HAL3.enabled", true) &&
+             !property_get_bool("media.camera.ts.monotonic", true)) {
+            key = kKeyTimeBoot;
+        }
+
+        if (meta->findInt64(key, &startTimeUs)) {
             mStartTimeUs = startTimeUs;
         }
 
@@ -1270,6 +1277,10 @@ void CameraSource::processBufferQueueFrame(BufferItem& buffer) {
 
 MetadataBufferType CameraSource::metaDataStoredInVideoBuffers() const {
     ALOGV("metaDataStoredInVideoBuffers");
+
+#ifdef CAMCORDER_GRALLOC_SOURCE
+    return kMetadataBufferTypeGrallocSource;
+#endif
 
     // Output buffers will contain metadata if camera sends us buffer in metadata mode or via
     // buffer queue.

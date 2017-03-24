@@ -4737,25 +4737,10 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
     return mixerStatus;
 }
 
-// trackCountForUid_l() must be called with ThreadBase::mLock held
-uint32_t AudioFlinger::PlaybackThread::trackCountForUid_l(uid_t uid)
-{
-    uint32_t trackCount = 0;
-    for (size_t i = 0; i < mTracks.size() ; i++) {
-        if (mTracks[i]->uid() == (int)uid) {
-            trackCount++;
-        }
-    }
-    return trackCount;
-}
-
 // getTrackName_l() must be called with ThreadBase::mLock held
 int AudioFlinger::MixerThread::getTrackName_l(audio_channel_mask_t channelMask,
-        audio_format_t format, audio_session_t sessionId, uid_t uid)
+        audio_format_t format, audio_session_t sessionId)
 {
-    if (trackCountForUid_l(uid) > (PlaybackThread::kMaxTracksPerUid - 1)) {
-        return -1;
-    }
     return mAudioMixer->getTrackName(channelMask, format, sessionId);
 }
 
@@ -4860,7 +4845,7 @@ bool AudioFlinger::MixerThread::checkForNewParameter_l(const String8& keyValuePa
             mAudioMixer = new AudioMixer(mNormalFrameCount, mSampleRate);
             for (size_t i = 0; i < mTracks.size() ; i++) {
                 int name = getTrackName_l(mTracks[i]->mChannelMask,
-                        mTracks[i]->mFormat, mTracks[i]->mSessionId, mTracks[i]->uid());
+                        mTracks[i]->mFormat, mTracks[i]->mSessionId);
                 if (name < 0) {
                     break;
                 }
@@ -5320,11 +5305,8 @@ bool AudioFlinger::DirectOutputThread::shouldStandby_l()
 
 // getTrackName_l() must be called with ThreadBase::mLock held
 int AudioFlinger::DirectOutputThread::getTrackName_l(audio_channel_mask_t channelMask __unused,
-        audio_format_t format __unused, audio_session_t sessionId __unused, uid_t uid)
+        audio_format_t format __unused, audio_session_t sessionId __unused)
 {
-    if (trackCountForUid_l(uid) > (PlaybackThread::kMaxTracksPerUid - 1)) {
-        return -1;
-    }
     return 0;
 }
 

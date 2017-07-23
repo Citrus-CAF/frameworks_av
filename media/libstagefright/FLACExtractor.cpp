@@ -77,6 +77,10 @@ class FLACParser : public RefBase {
 friend class FLACSource;
 
 public:
+    enum {
+        kMaxChannels = 8,
+    };
+
     FLACParser(
         const sp<DataSource> &dataSource,
         // If metadata pointers aren't provided, we don't fill them
@@ -129,6 +133,7 @@ private:
     // media buffers
     size_t mMaxBufferSize;
     MediaBufferGroup *mGroup;
+    void (*mCopy)(short *dst, const int *const *src, unsigned nSamples, unsigned nChannels);
 
     // handle to underlying libFLAC parser
     FLAC__StreamDecoder *mDecoder;
@@ -332,6 +337,7 @@ FLAC__StreamDecoderWriteStatus FLACParser::writeCallback(
         for(unsigned channel = 0; channel < frame->header.channels; channel++) {
             mWriteBuffer[channel] = buffer[channel];
         }
+
         mWriteCompleted = true;
         return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
     } else {
@@ -493,7 +499,7 @@ status_t FLACParser::init()
     }
     if (mStreamInfoValid) {
         // check channel count
-        if (getChannels() == 0 || getChannels() > 8) {
+        if (getChannels() == 0 || getChannels() > kMaxChannels) {
             ALOGE("unsupported channel count %u", getChannels());
             return NO_INIT;
         }
